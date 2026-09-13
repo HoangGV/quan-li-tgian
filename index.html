@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Study Dashboard</title>
+<style>
+:root{--bg:#f5f6f8;--card:#fff;--text:#20242b;--muted:#707782;--line:#e4e7ec;--accent:#3568d4;--danger:#c94b4b;--warn:#b87918;--good:#3d8059}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+button,input,textarea,select{font:inherit}button{cursor:pointer}.app{max-width:1120px;margin:auto;padding:18px 14px 44px}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px}h1{font-size:24px;margin:0}.sub,.small{color:var(--muted);font-size:12px}.topbar{display:flex;gap:7px;flex-wrap:wrap}.btn{border:1px solid var(--line);background:#fff;border-radius:9px;padding:8px 11px}.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.grid{display:grid;grid-template-columns:1.25fr .75fr;gap:14px}.card{background:#fff;border:1px solid var(--line);border-radius:13px;padding:16px}.full{grid-column:1/-1}.card h2{font-size:16px;margin:0 0 12px}
+.schedule{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.block{border:1px solid var(--line);border-radius:10px;padding:11px;min-height:94px}.block.active{border-color:var(--accent);box-shadow:0 0 0 2px #3568d412}.time{font-weight:700}.tag{display:inline-block;margin:5px 0;padding:2px 7px;background:#f0f2f5;color:var(--muted);border-radius:99px;font-size:11px}
+.current{margin-top:10px;padding:10px;border-radius:9px;background:#f4f7ff}.current b{color:var(--accent)}
+.task{display:flex;gap:9px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line)}.task:last-child{border:0}.task input{margin-top:4px}.name{flex:1}.pill{font-size:11px;padding:2px 7px;border-radius:99px}.red{background:#fdeeee;color:var(--danger)}.yellow{background:#fff5df;color:var(--warn)}.blue{background:#edf3ff;color:var(--accent)}
+.add{display:grid;grid-template-columns:1fr 125px 90px auto;gap:7px;margin-top:11px}.add input,.add select,.notes textarea{border:1px solid var(--line);border-radius:8px;padding:9px;background:#fff}
+.focus{text-align:center}.timer{font-size:58px;line-height:1.1;font-variant-numeric:tabular-nums;letter-spacing:-2px;margin:8px 0}.focusname{font-weight:650;min-height:22px}.modes{display:flex;justify-content:center;gap:5px}.mode{border:0;background:#f0f2f5;border-radius:99px;padding:6px 9px;font-size:12px}.mode.active{background:#dfe8ff;color:var(--accent)}.controls{display:flex;justify-content:center;gap:7px;margin:10px 0}.clock{font-variant-numeric:tabular-nums}
+.long{padding:10px 0;border-bottom:1px solid var(--line)}.longrow{display:flex;align-items:center;gap:8px}.longname{flex:1}.progress{height:7px;background:#eceef1;border-radius:99px;overflow:hidden;margin-top:6px}.progress i{display:block;height:100%;background:var(--accent)}
+.notes{display:grid;grid-template-columns:1fr;gap:8px}.notes label{font-weight:650;font-size:13px}.notes textarea{display:block;width:100%;resize:vertical;min-height:88px;margin-top:4px}
+.week{display:grid;grid-template-columns:repeat(7,1fr);gap:7px}.day{border:1px solid var(--line);border-radius:9px;text-align:center;padding:8px}.bar{height:40px;display:flex;align-items:end;justify-content:center}.bar i{width:17px;border-radius:4px 4px 1px 1px;background:var(--accent)}
+.rules{display:grid;grid-template-columns:1fr 1fr;gap:7px}.rule{border:1px solid var(--line);border-radius:9px;padding:9px;font-size:13px}
+.firebase{font-size:12px;padding:9px;border-radius:8px;background:#f7f7f8;margin-top:10px}.ok{color:var(--good)}.bad{color:var(--danger)}
+.modal{position:fixed;inset:0;background:#0007;display:none;align-items:center;justify-content:center;padding:15px;z-index:20}.modal.show{display:flex}.modalbox{background:#fff;border-radius:13px;max-width:720px;width:100%;max-height:88vh;overflow:auto;padding:18px}.modalbox code{background:#f0f1f3;padding:2px 4px;border-radius:4px}.modalbox pre{white-space:pre-wrap;background:#f5f6f8;padding:10px;border-radius:8px;overflow:auto}
+@media(max-width:800px){.grid{grid-template-columns:1fr}.full{grid-column:auto}.schedule{grid-template-columns:1fr 1fr}.add{grid-template-columns:1fr 1fr}.week{overflow-x:auto;grid-template-columns:repeat(7,88px)}}
+@media(max-width:480px){.app{padding:13px 10px}.schedule{grid-template-columns:1fr}.card{padding:13px}.timer{font-size:50px}header{align-items:flex-start;flex-direction:column}.add{grid-template-columns:1fr}.controls .btn{padding:8px 9px}}
+</style>
+</head>
+<body>
+<div class="app">
+<header><div><h1>Study Dashboard</h1><div class="sub" id="dateLine"></div></div>
+<div class="topbar"><button class="btn" onclick="showRules()">7 luật</button><button class="btn" onclick="showFirebase()">Firebase</button></div></header>
+
+<div class="grid">
+<section class="card full">
+<h2>Lịch hôm nay</h2><div class="schedule" id="schedule"></div>
+<div class="current" id="current"></div>
+</section>
+
+<section class="card">
+<h2>🎯 Phiên tập trung</h2>
+<div class="focus"><div class="modes"><button class="mode active" data-min="25">25′</button><button class="mode" data-min="50">50′</button><button class="mode" data-min="90">90′</button><button class="mode" data-min="5">Nghỉ 5′</button></div>
+<div class="timer" id="timer">25:00</div><div class="focusname" id="focusName">Chọn nhiệm vụ để gắn vào phiên</div>
+<div class="controls"><button class="btn primary" id="start">Bắt đầu</button><button class="btn" id="pause">Tạm dừng</button><button class="btn" id="reset">Đặt lại</button></div>
+<div class="small">Timer dùng <b>thời gian thực</b> (Date.now), nên không bị lệch khi tab bị treo. Hết phiên sẽ báo + âm thanh.</div></div>
+</section>
+
+<section class="card">
+<h2>🔥 Ưu tiên hôm nay</h2><div id="tasks"></div>
+<div class="add"><input id="taskInput" placeholder="Tên bài / nhiệm vụ"><select id="priority"><option value="red">🔴 Bắt buộc</option><option value="yellow">🟡 Nên làm</option><option value="blue">🔵 Dài hạn</option></select><button class="btn" id="addBtn">Thêm</button></div>
+<div class="small" style="margin-top:8px">“Phút” không cần nhập. Dashboard tự ghi <b>thời gian thực tế</b> của phiên khi bạn Bắt đầu/Dừng/Hoàn thành.</div>
+</section>
+
+<section class="card">
+<h2>📚 Bài dài hạn</h2><div id="projects"></div>
+<div class="add" style="grid-template-columns:1fr auto"><input id="projectInput" placeholder="Tên dự án / bài dài hạn"><button class="btn primary" id="projectBtn">Thêm</button></div>
+<div class="small" style="margin-top:8px">Không còn ô nhập %. Tiến độ tăng theo từng phần bạn tự đánh dấu.</div>
+</section>
+
+<section class="card">
+<h2>📝 Đóng ngày</h2><div class="notes">
+<label>✅ Hôm nay đã xong<textarea id="done" placeholder="Ví dụ: Toán bài 3, Hóa chương 2..."></textarea></label>
+<label>⚠️ Chưa xong / đang kẹt<textarea id="unfinished" placeholder="Ghi rõ câu/bước đang kẹt để xử lý sau hoặc hỏi AI."></textarea></label>
+<label>👉 Ngày mai bắt đầu bằng<textarea id="tomorrow" placeholder="Một nhiệm vụ cụ thể, có điểm kết thúc."></textarea></label>
+<label>🧠 Điều tôi học được hôm nay<textarea id="learned" placeholder="Một kiến thức, lỗi sai hoặc điều cần nhớ."></textarea></label>
+</div></section>
+
+<section class="card">
+<h2>📊 Tuần này</h2><div class="week" id="week"></div><div style="margin-top:10px"><b id="stats">0 phút học thực tế</b></div>
+</section>
+
+<section class="card full">
+<h2>☀️ Chủ nhật</h2><div class="schedule">
+<div class="block"><div class="time">07:00</div><span class="tag">Thức dậy</span><div>Không cần học ngay.</div></div>
+<div class="block"><div class="time">08:00–09:30</div><span class="tag">Ôn tập</span><div>Môn yếu / kiến thức tuần.</div></div>
+<div class="block"><div class="time">09:45–11:00</div><span class="tag">Bài tồn</span><div>Việc quan trọng nhất.</div></div>
+<div class="block"><div class="time">11:00–13:00</div><span class="tag">Ăn + nghỉ</span><div>Ăn trưa lúc 11h.</div></div>
+<div class="block"><div class="time">13:30–15:00</div><span class="tag">Dài hạn</span><div>Một phần nhỏ có điểm kết thúc.</div></div>
+<div class="block"><div class="time">15:30–16:30</div><span class="tag">Tổng kết</span><div>Xếp tuần mới.</div></div>
+<div class="block"><div class="time">16:30–22:00</div><span class="tag">Giải trí</span><div>Thời gian cá nhân thoải mái.</div></div>
+<div class="block"><div class="time">22:00–23:00</div><span class="tag">Chuẩn bị</span><div>Đóng tuần, chuẩn bị ngủ.</div></div>
+</div></section>
+
+<section class="card full">
+<h2>🧠 7 luật học tập</h2><div class="rules">
+<div class="rule"><b>1.</b> Mỗi block chỉ làm <b>một nhiệm vụ</b>.</div>
+<div class="rule"><b>2.</b> Mỗi nhiệm vụ phải có <b>thời hạn cụ thể</b>.</div>
+<div class="rule"><b>3.</b> Bị kẹt quá lâu → <b>đánh dấu → chuyển việc khác</b>.</div>
+<div class="rule"><b>4.</b> Bài dài hạn chia thành <b>phần nhỏ có điểm kết thúc</b>.</div>
+<div class="rule"><b>5.</b> <b>Tự làm trước → AI hỗ trợ → tự làm lại.</b></div>
+<div class="rule"><b>6.</b> Điện thoại chỉ xuất hiện trong <b>thời gian nghỉ</b>.</div>
+<div class="rule"><b>7.</b> <b>23h phải ngủ</b>; không hy sinh giấc ngủ để trả nợ bài.</div>
+</div></section>
+</div>
+<footer>Dữ liệu đồng bộ Firebase Realtime Database. Nếu chưa cấu hình Firebase, Dashboard vẫn chạy bằng localStorage.</footer>
+</div>
+
+<div class="modal" id="rulesModal" onclick="if(event.target===this)hideRules()"><div class="modalbox"><h2>7 luật học tập</h2><p style="margin:10px 0">Các luật luôn hiển thị ở cuối trang để bạn không quên.</p><button class="btn primary" onclick="hideRules()">Đóng</button></div></div>
+
+<div class="modal" id="firebaseModal" onclick="if(event.target===this)hideFirebase()"><div class="modalbox">
+<h2>🔥 Cấu hình Firebase</h2>
+<p style="margin:8px 0">File này đã có sẵn Firebase SDK. Bạn chỉ cần tạo project, bật Realtime Database và thay <code>firebaseConfig</code> ở cuối file.</p>
+<ol>
+<li>Vào <b>Firebase Console</b> → tạo project mới.</li>
+<li>Trong Project Overview → thêm một <b>Web app (&lt;/&gt;)</b>.</li>
+<li>Firebase sẽ đưa cho bạn đoạn <code>firebaseConfig</code>. Copy 7 trường vào file.</li>
+<li>Vào <b>Build → Realtime Database → Create Database</b>.</li>
+<li>Chọn location gần bạn, sau đó chọn <b>Start in test mode</b> nếu đây chỉ là project cá nhân.</li>
+<li>Lưu file HTML, mở lại. Góc Firebase sẽ báo trạng thái kết nối.</li>
+</ol>
+<p><b>Cảnh báo:</b> “không cần bảo mật” vẫn có nghĩa là bất kỳ ai có URL/database reference đều có thể sửa dữ liệu nếu bạn để rules công khai. Với đúng yêu cầu của bạn, test mode là đơn giản nhất; đừng dùng database công khai cho dữ liệu nhạy cảm.</p>
+<p>Nếu muốn chia dữ liệu theo từng trình duyệt mà không cần tài khoản, code đã tạo một <code>deviceId</code> trong localStorage và lưu dưới nhánh đó.</p>
+<button class="btn primary" onclick="hideFirebase()">Đóng</button>
+</div></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
+<script>
+/* ===== DÁN CONFIG FIREBASE CỦA BẠN VÀO ĐÂY ===== */
+const firebaseConfig={
+  apiKey:"AIzaSyBgnx-yAoVHYxyqnT6aOq2SGZVE9Fl7Vww",
+  authDomain:"quan-li-tgian.firebaseapp.com",
+  databaseURL:"https://quan-li-tgian-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId:"quan-li-tgian",
+  storageBucket:"quan-li-tgian.firebasestorage.app",
+  messagingSenderId:"398887959636",
+  appId:"1:398887959636:web:83346e31145b82a53581c1"
+};
+/* ============================================== */
+
+const KEY='studyDashboard_v2', deviceKey='studyDeviceId';
+let deviceId=localStorage.getItem(deviceKey)||crypto.randomUUID();localStorage.setItem(deviceKey,deviceId);
+let data=JSON.parse(localStorage.getItem(KEY)||'null')||{tasks:[],projects:[],logs:{},notes:{}};
+let db=null, remoteRef=null;
+const configured=!Object.values(firebaseConfig).some(v=>String(v).includes('YOUR_'));
+if(configured){
+ try{firebase.initializeApp(firebaseConfig);db=firebase.database();remoteRef=db.ref('studyDashboard/'+deviceId);
+ remoteRef.on('value',snap=>{let v=snap.val();if(v){data=v;localStorage.setItem(KEY,JSON.stringify(data));render();}});}
+ catch(e){console.warn(e)}
+}
+function save(){localStorage.setItem(KEY,JSON.stringify(data));if(remoteRef)remoteRef.set(data).catch(console.warn)}
+function dayKey(dt=new Date()){return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0')}
+function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
+const weekday=['CN','T2','T3','T4','T5','T6','T7'];
+const normalSchedule=[
+['13:45','14:00','Chuẩn bị','Chỉnh lại danh sách bài sau nghỉ trưa.'],
+['14:00','15:30','Block 1','Việc khó/quan trọng nhất'],
+['15:30','15:50','Nghỉ','Nghỉ thật sự'],
+['15:50','17:20','Block 2','Việc quan trọng thứ hai'],
+['17:20','17:50','Nghỉ','Vận động / giải trí ngắn'],
+['17:50','18:50','Block 3','Bài nhẹ / hoàn thiện'],
+['18:50','20:20','Ăn + vệ sinh','Nghỉ hoàn toàn'],
+['20:20','21:50','Block 4','Bài dài hạn / hoàn thiện'],
+['21:50','22:20','Giải trí','30 phút giải trí buổi tối'],
+['22:20','22:40','Đóng ngày','Chỉnh bài + chuẩn bị ngày mai'],
+['22:40','23:00','Hạ nhịp','Tắt máy, chuẩn bị ngủ']
+];
+function mins(t){let [h,m]=t.split(':').map(Number);return h*60+m}
+function renderSchedule(){
+ const now=new Date(), cur=now.getHours()*60+now.getMinutes()+now.getSeconds()/60;
+ document.getElementById('schedule').innerHTML=normalSchedule.map(x=>{
+  let a=mins(x[0]),b=mins(x[1]),active=cur>=a&&cur<b;
+  return `<div class="block ${active?'active':''}"><div class="time">${x[0]}–${x[1]}</div><span class="tag">${x[2]}</span><div>${x[3]}</div></div>`
+ }).join('');
+ let active=normalSchedule.find(x=>cur>=mins(x[0])&&cur<mins(x[1]));
+ if(active){let end=new Date();let [h,m]=active[1].split(':').map(Number);end.setHours(h,m,0,0);let sec=Math.max(0,Math.floor((end-now)/1000));document.getElementById('current').innerHTML=`Đang ở <b>${active[2]}</b> · còn <b>${fmt(sec)}</b> · giờ hệ thống <span class="clock">${now.toLocaleTimeString('vi-VN')}</span>`}
+ else document.getElementById('current').innerHTML=`Ngoài khung học đã lập · giờ hệ thống <b class="clock">${now.toLocaleTimeString('vi-VN')}</b>`;
+}
+function fmt(s){let h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;return (h?String(h).padStart(2,'0')+':':'')+String(m).padStart(2,'0')+':'+String(x).padStart(2,'0')}
+let lastSchedule='';
+function scheduleAlerts(){
+ const now=new Date(), stamp=dayKey(now)+' '+now.getHours()+':'+now.getMinutes();
+ if(stamp!==lastSchedule){lastSchedule=stamp;let cur=now.getHours()*60+now.getMinutes();
+  let start=normalSchedule.find(x=>mins(x[0])===cur);if(start) notify('Bắt đầu block',`${start[2]} · ${start[3]}`);
+  let end=normalSchedule.find(x=>mins(x[1])===cur);if(end) notify('Hết thời gian',`Đã hết ${end[2]}. Chuyển sang ${normalSchedule[normalSchedule.indexOf(end)+1]?.[2]||'việc tiếp theo'}.`);
+ }
+}
+function render(){
+ document.getElementById('dateLine').textContent=new Date().toLocaleDateString('vi-VN',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'});
+ document.getElementById('tasks').innerHTML=data.tasks.map((t,i)=>`<div class="task"><input type="checkbox" ${t.done?'checked':''} onchange="toggleTask(${i})"><div class="name"><b>${esc(t.name)}</b><div class="small">${formatTime(t.actual||0)} học thực tế · <span class="pill ${t.priority}">${t.priority==='red'?'Bắt buộc':t.priority==='yellow'?'Nên làm':'Dài hạn'}</span></div></div><button class="btn" onclick="focusTask(${i})">Tập trung</button><button class="btn" onclick="delTask(${i})">×</button></div>`).join('');
+ document.getElementById('projects').innerHTML=data.projects.map((p,i)=>`<div class="long"><div class="longrow"><div class="longname"><b>${esc(p.name)}</b><div class="progress"><i style="width:${p.pct}%"></i></div><div class="small">${p.pct}% · ${p.parts||0} phần hoàn thành</div></div><button class="btn" onclick="incProject(${i})">+1 phần</button><button class="btn" onclick="delProject(${i})">×</button></div></div>`).join('');
+ let n=data.notes[dayKey()]||{};['done','unfinished','tomorrow','learned'].forEach(k=>document.getElementById(k).value=n[k]||'');
+ renderWeek();renderSchedule();
+ document.getElementById('firebaseStatus')?.remove();
+}
+function formatTime(sec){let h=Math.floor(sec/3600),m=Math.floor(sec%3600/60);return h?`${h}h ${m}′`:`${m}′`}
+function addTask(){let n=taskInput.value.trim();if(!n)return;data.tasks.push({name:n,priority:priority.value,actual:0,done:false});taskInput.value='';save();render()}
+addBtn.onclick=addTask;
+function toggleTask(i){data.tasks[i].done=!data.tasks[i].done;save();render()}
+function delTask(i){data.tasks.splice(i,1);save();render()}
+function focusTask(i){document.getElementById('focusName').textContent=data.tasks[i].name;activeTask=i;window.scrollTo({top:0,behavior:'smooth'})}
+function addProject(){let n=projectInput.value.trim();if(!n)return;data.projects.push({name:n,pct:0,parts:0});projectInput.value='';save();render()}
+projectBtn.onclick=addProject;
+function incProject(i){let p=data.projects[i];p.parts=(p.parts||0)+1;p.pct=Math.min(100,p.parts*10);save();render()}
+function delProject(i){data.projects.splice(i,1);save();render()}
+['done','unfinished','tomorrow','learned'].forEach(k=>document.getElementById(k).oninput=e=>{let d=dayKey();data.notes[d]=data.notes[d]||{};data.notes[d][k]=e.target.value;save()});
+function renderWeek(){
+ let total=0,html='',now=new Date();
+ for(let j=6;j>=0;j--){let d=new Date(now);d.setDate(d.getDate()-j);let m=data.logs[dayKey(d)]||0;total+=m;let h=Math.min(40,Math.max(4,m/7));html+=`<div class="day"><b>${weekday[d.getDay()]}</b><div class="bar"><i style="height:${h}px"></i></div><div class="small">${formatTime(m)}</div></div>`}
+ document.getElementById('week').innerHTML=html;document.getElementById('stats').textContent=`${formatTime(total)} học thực tế · ${data.tasks.filter(x=>x.done).length} việc hoàn thành`;
+}
+/* ===== REAL-TIME FOCUS TIMER ===== */
+let remaining=1500,modeMin=25,running=false,startAt=0,elapsedBefore=0,iv=null,activeTask=-1;
+function setTimer(m){modeMin=m;remaining=m*60;running=false;elapsedBefore=0;clearInterval(iv);updateTimer()}
+function updateTimer(){let sec=remaining;document.getElementById('timer').textContent=fmt(sec)}
+function tick(){
+ if(!running)return;let elapsed=elapsedBefore+Math.floor((Date.now()-startAt)/1000);remaining=Math.max(0,modeMin*60-elapsed);updateTimer();
+ if(remaining<=0){running=false;clearInterval(iv);recordFocus(modeMin*60);notify('Hết phiên tập trung','Đã hết thời gian. Hãy nghỉ hoặc chuyển nhiệm vụ.');setTimer(modeMin)}
+}
+function startTimer(){if(running)return;running=true;startAt=Date.now();iv=setInterval(tick,250)}
+function pauseTimer(){if(!running)return;elapsedBefore+=Math.floor((Date.now()-startAt)/1000);running=false;clearInterval(iv);remaining=Math.max(0,modeMin*60-elapsedBefore);if(elapsedBefore>0)recordFocus(elapsedBefore);elapsedBefore=0}
+function resetTimer(){running=false;clearInterval(iv);setTimer(modeMin)}
+function recordFocus(sec){if(sec<5)return;let k=dayKey();data.logs[k]=(data.logs[k]||0)+sec/60;if(activeTask>=0&&data.tasks[activeTask])data.tasks[activeTask].actual=(data.tasks[activeTask].actual||0)+sec;save();render()}
+document.querySelectorAll('.mode').forEach(b=>b.onclick=()=>{document.querySelectorAll('.mode').forEach(x=>x.classList.remove('active'));b.classList.add('active');setTimer(+b.dataset.min)});
+start.onclick=startTimer;pause.onclick=pauseTimer;reset.onclick=resetTimer;
+function notify(title,body){if('Notification'in window&&Notification.permission==='default')Notification.requestPermission();if('Notification'in window&&Notification.permission==='granted')new Notification(title,{body});try{let a=new AudioContext(),o=a.createOscillator(),g=a.createGain();o.connect(g);g.connect(a.destination);o.frequency.value=880;g.gain.value=.12;o.start();o.stop(a.currentTime+.45)}catch(e){}}
+document.addEventListener('click',()=>{if('Notification'in window&&Notification.permission==='default')Notification.requestPermission()},{once:true});
+function showRules(){rulesModal.classList.add('show')}function hideRules(){rulesModal.classList.remove('show')}
+function showFirebase(){firebaseModal.classList.add('show')}function hideFirebase(){firebaseModal.classList.remove('show')}
+setInterval(()=>{renderSchedule();scheduleAlerts();tick()},250);
+render();setTimeout(()=>{if(configured)console.log('Firebase Realtime Database enabled');},500);
+</script>
+</body>
+</html>
