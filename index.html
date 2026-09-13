@@ -129,7 +129,9 @@ const firebaseConfig={
 
 const KEY='studyDashboard_v2', deviceKey='studyDeviceId';
 let deviceId=localStorage.getItem(deviceKey)||crypto.randomUUID();localStorage.setItem(deviceKey,deviceId);
-let data=JSON.parse(localStorage.getItem(KEY)||'null')||{tasks:[],projects:[],logs:{},notes:{}};
+let data = normalizeData(
+    JSON.parse(localStorage.getItem(KEY) || 'null')
+);
 let db=null, remoteRef=null;
 const configured=!Object.values(firebaseConfig).some(v=>String(v).includes('YOUR_'));
 if(configured){
@@ -151,7 +153,28 @@ remoteRef.on('value', snap => {
 });
  catch(e){console.warn(e)}
 }
-function save(){localStorage.setItem(KEY,JSON.stringify(data));if(remoteRef)remoteRef.set(data).catch(console.warn)}
+function normalizeData(value) {
+    value = value || {};
+
+    return {
+        tasks: Array.isArray(value.tasks) ? value.tasks : [],
+        projects: Array.isArray(value.projects) ? value.projects : [],
+        logs: value.logs && typeof value.logs === 'object' ? value.logs : {},
+        notes: value.notes && typeof value.notes === 'object' ? value.notes : {}
+    };
+}
+
+function save() {
+    data = normalizeData(data);
+
+    localStorage.setItem(KEY, JSON.stringify(data));
+
+    if (remoteRef) {
+        remoteRef.set(data).catch(err => {
+            console.error('Firebase save error:', err);
+        });
+    }
+}
 function dayKey(dt=new Date()){return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0')}
 function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
 const weekday=['CN','T2','T3','T4','T5','T6','T7'];
