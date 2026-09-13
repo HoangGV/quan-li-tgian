@@ -21,8 +21,8 @@ header{display:flex;justify-content:space-between;align-items:center;gap:12px;ma
 .rules{display:grid;grid-template-columns:1fr 1fr;gap:7px}.rule{border:1px solid var(--line);border-radius:9px;padding:9px;font-size:13px}
 .firebase{font-size:12px;padding:9px;border-radius:8px;background:#f7f7f8;margin-top:10px}.ok{color:var(--good)}.bad{color:var(--danger)}
 .modal{position:fixed;inset:0;background:#0007;display:none;align-items:center;justify-content:center;padding:15px;z-index:20}.modal.show{display:flex}.modalbox{background:#fff;border-radius:13px;max-width:720px;width:100%;max-height:88vh;overflow:auto;padding:18px}.modalbox code{background:#f0f1f3;padding:2px 4px;border-radius:4px}.modalbox pre{white-space:pre-wrap;background:#f5f6f8;padding:10px;border-radius:8px;overflow:auto}
-@media(max-width:800px){.grid{grid-template-columns:1fr}.full{grid-column:auto}.schedule{grid-template-columns:1fr 1fr}.add{grid-template-columns:1fr 1fr}.week{overflow-x:auto;grid-template-columns:repeat(7,88px)}}
-@media(max-width:480px){.app{padding:13px 10px}.schedule{grid-template-columns:1fr}.card{padding:13px}.timer{font-size:50px}header{align-items:flex-start;flex-direction:column}.add{grid-template-columns:1fr}.controls .btn{padding:8px 9px}}
+@media(max-width:800px){.grid{grid-template-columns:1fr}.full{grid-column:auto}.schedule{grid-template-columns:1fr 1fr}.add{grid-template-columns:1fr 1fr}.week{overflow-x:auto;grid-template-columns:repeat(7,88px)}.topbar{width:100%}.topbar .btn{flex:1}}
+@media(max-width:480px){.app{padding:10px 8px}.schedule{grid-template-columns:1fr}.card{padding:12px}.timer{font-size:48px}.controls{flex-wrap:wrap}.controls .btn{padding:8px 9px;flex:1}.add{grid-template-columns:1fr}.task{flex-wrap:wrap}.task .name{min-width:calc(100% - 30px)}.task .btn{flex:1}.notes textarea{min-height:100px}header{align-items:flex-start;flex-direction:column}}
 </style>
 </head>
 <body>
@@ -108,7 +108,7 @@ header{display:flex;justify-content:space-between;align-items:center;gap:12px;ma
 <li>Lưu file HTML, mở lại. Góc Firebase sẽ báo trạng thái kết nối.</li>
 </ol>
 <p><b>Cảnh báo:</b> “không cần bảo mật” vẫn có nghĩa là bất kỳ ai có URL/database reference đều có thể sửa dữ liệu nếu bạn để rules công khai. Với đúng yêu cầu của bạn, test mode là đơn giản nhất; đừng dùng database công khai cho dữ liệu nhạy cảm.</p>
-<p>Nếu muốn chia dữ liệu theo từng trình duyệt mà không cần tài khoản, code đã tạo một <code>deviceId</code> trong localStorage và lưu dưới nhánh đó.</p>
+<p>Nếu muốn chia dữ liệu theo từng trình duyệt mà không cần tài khoản, code dùng một nhánh chung <code>studyDashboard/main</code>, nên máy tính và điện thoại dùng cùng một dữ liệu.</p>
 <button class="btn primary" onclick="hideFirebase()">Đóng</button>
 </div></div>
 
@@ -127,31 +127,26 @@ const firebaseConfig={
 };
 /* ============================================== */
 
-const KEY='studyDashboard_v2', deviceKey='studyDeviceId';
-let deviceId=localStorage.getItem(deviceKey)||crypto.randomUUID();localStorage.setItem(deviceKey,deviceId);
+const KEY='studyDashboard_v3';
+const SHARED_PATH='studyDashboard/main';
 let data = normalizeData(
     JSON.parse(localStorage.getItem(KEY) || 'null')
 );
 let db=null, remoteRef=null;
 const configured=!Object.values(firebaseConfig).some(v=>String(v).includes('YOUR_'));
 if(configured){
- try{firebase.initializeApp(firebaseConfig);db=firebase.database();remoteRef=db.ref('studyDashboard/'+deviceId);
+ try{firebase.initializeApp(firebaseConfig);db=firebase.database();remoteRef=db.ref(SHARED_PATH);
 remoteRef.on('value', snap => {
     const v = snap.val();
 
     if (v) {
-        data = {
-            tasks: Array.isArray(v.tasks) ? v.tasks : [],
-            projects: Array.isArray(v.projects) ? v.projects : [],
-            logs: v.logs && typeof v.logs === 'object' ? v.logs : {},
-            notes: v.notes && typeof v.notes === 'object' ? v.notes : {}
-        };
+        data = normalizeData(v);
 
         localStorage.setItem(KEY, JSON.stringify(data));
         render();
     }
 });
-    } catch(e){console.warn(e)}
+ catch(e){console.warn(e)}
 }
 function normalizeData(value) {
     value = value || {};
