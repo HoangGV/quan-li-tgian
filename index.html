@@ -134,7 +134,21 @@ let db=null, remoteRef=null;
 const configured=!Object.values(firebaseConfig).some(v=>String(v).includes('YOUR_'));
 if(configured){
  try{firebase.initializeApp(firebaseConfig);db=firebase.database();remoteRef=db.ref('studyDashboard/'+deviceId);
- remoteRef.on('value',snap=>{let v=snap.val();if(v){data=v;localStorage.setItem(KEY,JSON.stringify(data));render();}});}
+remoteRef.on('value', snap => {
+    const v = snap.val();
+
+    if (v) {
+        data = {
+            tasks: Array.isArray(v.tasks) ? v.tasks : [],
+            projects: Array.isArray(v.projects) ? v.projects : [],
+            logs: v.logs && typeof v.logs === 'object' ? v.logs : {},
+            notes: v.notes && typeof v.notes === 'object' ? v.notes : {}
+        };
+
+        localStorage.setItem(KEY, JSON.stringify(data));
+        render();
+    }
+});
  catch(e){console.warn(e)}
 }
 function save(){localStorage.setItem(KEY,JSON.stringify(data));if(remoteRef)remoteRef.set(data).catch(console.warn)}
